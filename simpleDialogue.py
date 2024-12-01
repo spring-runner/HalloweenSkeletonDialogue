@@ -6,11 +6,12 @@ import random
 import time
 from typing import Tuple
 from typing import List
-from camera import Camera
 
 from elevenlabs import play, VoiceSettings
 from elevenlabs.client import ElevenLabs
 from openai import OpenAI
+
+from camera import Camera
 
 # ElevenLabs voice IDs for the two skeletons.
 DAVE_VOICE_ID = "qNkzaJoHLLdpvgh5tISm"
@@ -72,7 +73,7 @@ def get_skeleton_response(skeleton_name: str,
 
     # Decide whether to ask for a comment on an image or the next line of dialogue.
     if image_url is None:
-        conversation_history.append( 
+        conversation_history.append(
             { "role" : "user", "content" : f"What does {skeleton_name} say?"} )
     else:
         conversation_history.append( {
@@ -119,7 +120,7 @@ def run_dialogue(elevenlabs_client: ElevenLabs,
         skeleton_num = r % 2
         skeleton_name = skeleton_names[skeleton_num]
         skeleton_voice = skeleton_voices[skeleton_num]
-        skeleton_says = get_skeleton_response(skeleton_name, image_url, 
+        skeleton_says = get_skeleton_response(skeleton_name, image_url,
                                               conversation_history, openai_client)
 
         log_entry = f"{time.asctime()} {skeleton_name}: {skeleton_says}\n"
