@@ -1,7 +1,5 @@
-from elevenlabs import VoiceSettings, play, Voice
-from elevenlabs.client import ElevenLabs
-from openai import OpenAI
-import base64
+""" A simple dialogue between two skeletons using the ElevenLabs and OpenAI APIs. """
+
 import logging
 import os
 import random
@@ -9,6 +7,10 @@ import time
 from typing import Tuple
 from typing import List
 from camera import Camera
+
+from elevenlabs import play, VoiceSettings
+from elevenlabs.client import ElevenLabs
+from openai import OpenAI
 
 # ElevenLabs voice IDs for the two skeletons.
 DAVE_VOICE_ID = "qNkzaJoHLLdpvgh5tISm"
@@ -29,12 +31,12 @@ def setup_ai_clients()->Tuple[ElevenLabs, OpenAI]:
     See https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
     for more info on how to store API keys securely.
     """
-    eleven_labs_api_key = os.getenv("ELEVENLABS_API_KEY")  
+    eleven_labs_api_key = os.getenv("ELEVENLABS_API_KEY")
     if eleven_labs_api_key is None:
         raise ValueError("ELEVENLABS_API_KEY is not set.")
     eleven_client = ElevenLabs(api_key=eleven_labs_api_key)
 
-    openai_api_key = os.getenv("OPENAI_API_KEY")  
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key is None:
         raise ValueError("openai_api_key is not set.")
     openai_client = OpenAI(api_key=openai_api_key)
@@ -58,9 +60,9 @@ def text_to_speech(text: str, voice: str, eleven_client: ElevenLabs)->None:
 
     play(response)
 
-def get_skeleton_response(skeleton_name: str, 
-                          image_url: str, 
-                          conversation_history: List[str], 
+def get_skeleton_response(skeleton_name: str,
+                          image_url: str,
+                          conversation_history: List[str],
                           openai_client: OpenAI)->str:
     """ Get the next line of dialogue from the skeleton. 
     
@@ -69,8 +71,9 @@ def get_skeleton_response(skeleton_name: str,
     """
 
     # Decide whether to ask for a comment on an image or the next line of dialogue.
-    if image_url == None:
-        conversation_history.append( { "role" : "user", "content" : f"What does {skeleton_name} say?"} )
+    if image_url is None:
+        conversation_history.append( 
+            { "role" : "user", "content" : f"What does {skeleton_name} say?"} )
     else:
         conversation_history.append( {
             "role" : "user",
@@ -89,13 +92,13 @@ def get_skeleton_response(skeleton_name: str,
     skeleton_response = response.choices[0].message.content
     if skeleton_response[0] == '"' and skeleton_response[-1] == '"':
         skeleton_response = skeleton_response[1:-1]
-    
+
     conversation_history.append( { "role" : "assistant", "content" : skeleton_response } )
     return skeleton_response
 
-def run_dialogue(elevenlabs_client: ElevenLabs, 
-                 openai_client: OpenAI, 
-                 camera: Camera, 
+def run_dialogue(elevenlabs_client: ElevenLabs,
+                 openai_client: OpenAI,
+                 camera: Camera,
                  preamble: str)->None:
     """ Run the dialogue between the two skeletons. """
     conversation_history = [{ "role" : "system", "content" : preamble }]
@@ -104,24 +107,25 @@ def run_dialogue(elevenlabs_client: ElevenLabs,
     skeleton_voices = [ NELLIE_VOICE_ID, DAVE_VOICE_ID ]
     last_image_round = 0
 
-    for round in range(10000):
-        comments_since_image = round - last_image_round
+    for r in range(10000):
+        comments_since_image = r - last_image_round
         if comments_since_image >= 2 and random.random() < 0.5:
             image_url = camera.get_webcam_image_as_base64()
             logging.info(f"Image taken at {time.asctime()}\n")
-            last_image_round = round
+            last_image_round = r
         else:
             image_url = None
 
-        skeleton_num = round % 2
+        skeleton_num = r % 2
         skeleton_name = skeleton_names[skeleton_num]
         skeleton_voice = skeleton_voices[skeleton_num]
-        skeleton_says = get_skeleton_response(skeleton_name, image_url, conversation_history, openai_client)
-   
+        skeleton_says = get_skeleton_response(skeleton_name, image_url, 
+                                              conversation_history, openai_client)
+
         log_entry = f"{time.asctime()} {skeleton_name}: {skeleton_says}\n"
         print(log_entry)
         logging.info(log_entry)
-   
+
         text_to_speech(skeleton_says, skeleton_voice, elevenlabs_client)
 
 if __name__ == "__main__":
@@ -130,8 +134,8 @@ if __name__ == "__main__":
         logging.info(f"Creating log directory {LOG_DIR}")
         os.makedirs(LOG_DIR)
     else:
-        logging.info(f"Log directory {LOG_DIR} exists.")  
-    
+        logging.info(f"Log directory {LOG_DIR} exists.")
+
     log_file_path = os.path.join(LOG_DIR, LOG_FILE)
     logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
 

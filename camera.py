@@ -1,14 +1,26 @@
+""" Module to take pictures with the webcam."""
+
 import base64
-import cv2
 import logging
 import os
+
+import cv2
+
 
 # Number of frames to use to allow the camera to adjusts to the lighting conditions.
 NUM_FRAMES_FOR_CAMERA_ADJUSTMENT = 1
 
 class Camera:
+    """ Class to take pictures with the webcam."""
     def __init__(self, log_file_path):
-        self.__camera_port = 0
+        """ Initialize the camera.
+
+        Args:
+            log_file_path: The base name for the image log file.
+
+        Raises:
+            RuntimeError: If the camera fails to open.
+        """
         self.__max_image_size = 360 # Maximum size of the image to send to the AI model.
         self.__image_log_file_base = log_file_path # Base name for the image log file.
         self.__images_taken = 0
@@ -54,10 +66,10 @@ class Camera:
     def __convert_image_to_base64(self, image):
         """ Convert an image to a base64 string to send as data to the AI client."""
         buffer = cv2.imencode('.jpg', image)[1]
-        jpg_as_bytes = base64.b64encode(buffer) 
+        jpg_as_bytes = base64.b64encode(buffer)
         jpg_as_text = jpg_as_bytes.decode('utf-8')
         return f"data:image/jpeg;base64,{jpg_as_text}"
-    
+
     def get_webcam_image(self)->cv2.VideoCapture:
         """ Get an image from the webcam.  Return a jpg."""
         logging.info("Taking a picture with the webcam.")
@@ -70,10 +82,9 @@ class Camera:
             if not cv2.imwrite(filename, image):
                 logging.error(f"Failed to write image to {filename}.")
             return image
-        else:
-            logging.error("Failed to get image.")
-            return None
-    
+        logging.error("Failed to get image.")
+        return None
+
     def get_webcam_image_as_base64(self)->str:
         """ Get an image from the webcam and return as a base64 string."""
         image = self.get_webcam_image()
